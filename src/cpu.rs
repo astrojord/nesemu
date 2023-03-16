@@ -45,7 +45,7 @@ pub enum AddressingMode {
     NoneAddressing,
 }
 
-trait Memory {
+pub trait Memory {
     fn mem_read(&self, addr: u16) -> u8; 
 
     fn mem_write(&mut self, addr: u16, data: u8);
@@ -451,6 +451,8 @@ impl CPU {
             if program_ctr_state == self.program_ctr {
                 self.program_ctr += (opcode.len - 1) as u16;
             }
+
+            callback(self);
         }
     }
 
@@ -595,7 +597,7 @@ impl CPU {
 
     fn dec(&mut self, mode: &AddressingMode) -> u8 { // decrement memory
         let addr = self.get_op_address(mode);
-        let mut data = self.mem_read(addr);
+        let data = self.mem_read(addr);
         self.mem_write(addr, data.wrapping_sub(1));
         self.update_zero_neg_flags(data);
         data

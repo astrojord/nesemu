@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::opcodes;
+use crate::bus::Bus;
 
 bitflags! {
     // http://wiki.nesdev.com/w/index.php/Status_flags
@@ -27,7 +28,7 @@ pub struct CPU {
     pub status: CpuFlags,
     pub program_ctr: u16, // increments through sequence of opcodes
     pub stack_ptr: u8,
-    memory: [u8; 0xFFFF], // full address space
+    pub bus: Bus, // replaces direct memory access
 }
 
 #[derive(Debug)]
@@ -66,15 +67,23 @@ pub trait Memory {
     }
 }
 
-impl Memory for CPU {
-    fn mem_read(&self, addr: u16) -> u8 { 
-        self.memory[addr as usize]
-    }
 
-    fn mem_write(&mut self, addr: u16, data: u8) { 
-        self.memory[addr as usize] = data;
+impl Memory for CPU {
+    fn mem_read(&self, addr: u16) -> u8 {
+        self.bus.mem_read(addr)
     }
-}
+ 
+    fn mem_write(&mut self, addr: u16, data: u8) {
+        self.bus.mem_write(addr, data)
+    }
+    fn mem_read_u16(&self, pos: u16) -> u16 {
+        self.bus.mem_read_u16(pos)
+    }
+  
+    fn mem_write_u16(&mut self, pos: u16, data: u16) {
+        self.bus.mem_write_u16(pos, data)
+    }
+ }
 
 impl CPU {
     pub fn new() -> Self {
@@ -85,7 +94,7 @@ impl CPU {
             status: CpuFlags::from_bits_truncate(0b100100),
             program_ctr: 0,
             stack_ptr: STACK_RESET,
-            memory: [0; 0xFFFF],
+            bus: Bus::new(),
         }
     }
 
@@ -154,8 +163,10 @@ impl CPU {
     }
 
     pub fn load(&mut self, program: Vec<u8>) {
-        self.memory[0x8000 .. (0x8000 + program.len())].copy_from_slice(&program[..]); // 0x8000 to 0xFFFF reserved for program ROM
-        self.mem_write_u16(0xFFFC, 0x8000);
+        for i in 0..(program.len() as u16) {
+            self.mem_write(0x0600 + i, program[i as usize]);
+        }
+        self.mem_write_u16(0xFFFC, 0x0600);
     }
 
     pub fn run(&mut self) {

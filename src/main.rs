@@ -1,5 +1,6 @@
 pub mod cpu;
 pub mod opcodes;
+pub mod bus;
 
 use cpu::Memory;
 use cpu::CPU;

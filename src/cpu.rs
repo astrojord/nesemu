@@ -172,7 +172,7 @@ impl CPU {
             self.program_ctr += 1;
             let program_ctr_state = self.program_ctr;
 
-            let opcode = opcodes.get(&code).expect(&format!("opcode {:x} not recognized", code));
+            let opcode = opcodes.get(&code).unwrap();
 
             match code {
                 /* ----- loads/stores ----- */
@@ -462,7 +462,7 @@ impl CPU {
         self.run();
     }
 
-    /* opcode functions */
+    /* ----- opcode functions ----- */
     pub fn update_zero_neg_flags(&mut self, result: u8) {
         if result == 0 {
             self.status.insert(CpuFlags::ZERO);
